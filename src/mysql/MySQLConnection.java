@@ -2,8 +2,12 @@ package mysql;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
 
 public class MySQLConnection {
@@ -12,9 +16,9 @@ public class MySQLConnection {
 	
 	public static Connection getInstance() {
 		if(connection == null) {
-			Properties database = new Properties();
-			File config = new File("config/database.dtd");
 			try {
+				Properties database = new Properties();
+				File config = new File("config/database.dtd");
 				FileInputStream source = new FileInputStream(config);
 				database.loadFromXML(source);
 				connection = DriverManager.getConnection(
@@ -27,8 +31,8 @@ public class MySQLConnection {
 					database.getProperty("username"),
 					database.getProperty("password")
 				);
-			} catch(Exception error) {
-				error.printStackTrace();
+			} catch(Exception e) {
+				return null;
 			}
 		}
 		return connection;

@@ -1,17 +1,12 @@
 package application;
 
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-import javax.annotation.Resources;
 
-import dao.DAO;
 import factory.DAOFactory;
 import factory.Persistance;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
@@ -34,28 +29,44 @@ public class SceneController {
 	private TextField el_tarif;
 	
 	@FXML
-	private Label el_errors;
-	
-	@FXML
-	private Label el_output;
+	private TextArea el_output;
 	
 	@FXML
 	private ComboBox<String> el_periodicite;
 	
+	@FXML
+	private ComboBox<String> el_persistance;
+	
 	private Persistance persistance = Persistance.LM;
 	
+	@FXML
+	public void selectPersistance() {
+		String choice = el_persistance.getSelectionModel().getSelectedItem().toString();
+		
+		if(choice.equals("MYSQL")) {
+			persistance = Persistance.MYSQL;
+		} else if(choice.equals("LM")) {
+			persistance = Persistance.LM;
+		}
+	}
 	
 	@FXML
 	protected void initialize() {
-		List<Periodicite> liste = DAOFactory.getDAOFactory(persistance).getPeriodiciteDAO().getAll();
-		List<String> liste2 = new ArrayList<String>();
+		// Set Persistance
+		List<String> persist = new ArrayList<String>();
+		persist.add(Persistance.MYSQL.toString());
+		persist.add(Persistance.LM.toString());
+		el_persistance.setItems(FXCollections.observableList(persist));
 		
-		for(Periodicite p : liste) {
-			liste2.add(p.getLibelle());
+		// Set Periodicité
+		List<Periodicite> perio = DAOFactory.getDAOFactory(persistance).getPeriodiciteDAO().getAll();
+		List<String> perioStr = new ArrayList<String>();
+		
+		for(Periodicite p : perio) {
+			perioStr.add(p.getLibelle());
 		}
 		
-		ObservableList<String> observableList = FXCollections.observableList(liste2);
-		el_periodicite.setItems(observableList);
+		el_periodicite.setItems(FXCollections.observableList(perioStr));
 	}
 	
 
@@ -92,17 +103,25 @@ public class SceneController {
 		// PERIODICITE
 		String periodicite_label = el_periodicite.getSelectionModel().getSelectedItem().toString();
 		int periodicite_id = 0;
-		List<Periodicite> periodicite = DAOFactory.getDAOFactory(persistance).getPeriodiciteDAO().getAll();
-		for(Periodicite p : periodicite) {
-			if(p.getLibelle().equals(periodicite_label)) {
-				periodicite_id = p.getId();
+		try {
+			List<Periodicite> periodicite = DAOFactory.getDAOFactory(persistance).getPeriodiciteDAO().getAll();
+			for(Periodicite p : periodicite) {
+				if(p.getLibelle().equals(periodicite_label)) {
+					periodicite_id = p.getId();
+				}
 			}
+		} catch(Exception error) {
+			errors.add("Une erreur est survenue : " + error.getMessage());
 		}
 		
 		if(errors.isEmpty()) {
-			Revue r = new Revue(-1, titre, description, tarif_float, "", periodicite_id);
-			DAOFactory.getDAOFactory(persistance).getRevueDAO().create(r);
-			el_output.setText(r.toString());
+			Revue revue = new Revue(-1, titre, description, tarif_float, "", periodicite_id);
+			try {
+				DAOFactory.getDAOFactory(persistance).getRevueDAO().create(revue);
+				el_output.setText(revue.toString());
+			} catch(Exception error) {
+				el_output.setText("Une erreur est survenue : " + error.getMessage());
+			}
 		} else {
 			String error = "";
 			for(String s : errors) {
